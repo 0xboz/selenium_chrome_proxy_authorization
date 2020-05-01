@@ -1,18 +1,19 @@
 from settings import USERNAME, PASSWORD, CHROME_WEBDRIVER
 
+from pyvirtualdisplay import Display
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 
-from pyvirtualdisplay import Display
-
+import logging
 
 
 def create_proxyauth_extension(proxy_host, proxy_port,
                                proxy_username, proxy_password,
                                scheme='http', plugin_path=None):
-    """Proxy Auth Extension
-
+    """
+    Proxy Auth Extension
     args:
         proxy_host (str): domain or ip address, ie proxy.domain.com
         proxy_port (int): port
@@ -52,7 +53,7 @@ def create_proxyauth_extension(proxy_host, proxy_port,
     """
 
     background_js = string.Template(
-    """
+        """
     var config = {
             mode: "fixed_servers",
             rules: {
@@ -95,6 +96,7 @@ def create_proxyauth_extension(proxy_host, proxy_port,
 
     return plugin_path
 
+
 if __name__ == "__main__":
 
     display = Display(visible=0, size=(1920, 1080))
@@ -110,11 +112,18 @@ if __name__ == "__main__":
     chrome_options = Options()
     chrome_options.add_argument("--start-maximized")
     chrome_options.add_extension(proxyauth_plugin_path)
-    driver = webdriver.Chrome(chrome_options=chrome_options, executable_path=CHROME_WEBDRIVER)
+    driver = webdriver.Chrome(options=chrome_options,
+                              executable_path=CHROME_WEBDRIVER)
 
-    driver.get("http://ifconfig.me/ip")
-    ip_address = driver.find_element(By.XPATH, '//html/body/pre').text
-    print(ip_address)
+    try:
+        driver.get("http://ifconfig.me/ip")
+        ip_address = driver.find_element(By.XPATH, '//html/body/pre').text
+        print(ip_address)
+    except NoSuchElementException as e:
+        logging.error(e.__repr__())
 
     if display:
         display.stop()
+
+    if driver:
+        driver.quit()
